@@ -18,6 +18,10 @@ const businessListingSchema = new mongoose.Schema(
       enum: ['pending', 'approved', 'rejected'],
       default: 'pending',
     },
+    providerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Provider',
+    },
   },
   { timestamps: true }
 );

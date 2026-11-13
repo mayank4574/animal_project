@@ -115,7 +115,7 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-700/60 flex flex-wrap gap-4 text-xs text-gray-400">
+          <div className="mt-6 pt-4 border-t border-gray-700/60 flex flex-wrap items-center gap-4 text-xs text-gray-400">
             <button
               type="button"
               onClick={() => setModalType('privacy')}
@@ -131,6 +131,10 @@ export default function Footer() {
             >
               Terms of Service
             </button>
+            <span className="text-gray-600">•</span>
+            <Link to="/admin" className="hover:text-white underline cursor-pointer text-[#087F8C]">
+              Admin Portal
+            </Link>
           </div>
         </div>
 

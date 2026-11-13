@@ -23,6 +23,7 @@ const providerSchema = new mongoose.Schema(
     reviewCount: { type: Number, default: 0 },
     openingHours: Object,
     isOpen: Boolean,
+    isActive: { type: Boolean, default: true },
     verificationStatus: {
       type: String,
       enum: ['pending', 'verified', 'rejected'],
@@ -32,15 +33,14 @@ const providerSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-providerSchema.pre('save', function (next) {
-  if (this.isModified('name')) {
+providerSchema.pre('save', function () {
+  if (this.isModified('name') || !this.slug) {
     this.slug = this.name
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-');
   }
-  next();
 });
 
 module.exports = mongoose.model('Provider', providerSchema);

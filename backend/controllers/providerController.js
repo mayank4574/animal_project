@@ -19,7 +19,9 @@ exports.getProviders = asyncHandler(async (req, res) => {
     sort = 'relevance',
   } = req.query;
 
-  const andClauses = [];
+  const andClauses = [
+    { verificationStatus: 'verified', isActive: { $ne: false } },
+  ];
 
   if (category) {
     andClauses.push({ category });
@@ -112,7 +114,12 @@ exports.getProviders = asyncHandler(async (req, res) => {
 
 // GET /api/providers/featured
 exports.getFeatured = asyncHandler(async (_req, res) => {
-  const data = await Provider.find().sort({ rating: -1 }).limit(6);
+  const data = await Provider.find({
+    verificationStatus: 'verified',
+    isActive: { $ne: false },
+  })
+    .sort({ rating: -1, reviewCount: -1 })
+    .limit(6);
   res.json({ success: true, data });
 });
 
@@ -123,9 +130,13 @@ exports.getProvider = asyncHandler(async (req, res) => {
     ? { _id: idOrSlug }
     : { slug: idOrSlug };
 
-  const provider = await Provider.findOne(query);
+  const provider = await Provider.findOne({
+    ...query,
+    verificationStatus: 'verified',
+    isActive: { $ne: false },
+  });
   if (!provider) {
-    return res.status(404).json({ success: false, message: 'Provider not found' });
+    return res.status(404).json({ success: false, message: 'Provider not found or currently inactive' });
   }
   res.json({ success: true, data: provider });
 });

@@ -8,15 +8,16 @@ import api from '../../services/api'
 const issueOptions = [
   { value: 'incorrect_name', label: 'Incorrect Business Name' },
   { value: 'incorrect_address', label: 'Incorrect Address / Location' },
-  { value: 'wrong_phone', label: 'Wrong Phone Number' },
+  { value: 'wrong_phone', label: 'Incorrect Phone Number' },
   { value: 'incorrect_category', label: 'Incorrect Service Category' },
-  { value: 'closed_business', label: 'Permanently Closed Business' },
+  { value: 'closed_business', label: 'Business Permanently Closed' },
+  { value: 'incorrect_website', label: 'Incorrect Website' },
   { value: 'other', label: 'Other Information' },
 ]
 
 export default function SubmitCorrection() {
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const [correctionResult, setCorrectionResult] = useState(null)
   const { register, handleSubmit, reset, formState: { errors } } = useForm()
 
   const onSubmit = async (formData) => {
@@ -25,7 +26,7 @@ export default function SubmitCorrection() {
       const res = await api.post('/corrections', formData)
       if (res.data?.success) {
         toast.success('Thank you! Your correction report has been submitted for review.')
-        setSubmitted(true)
+        setCorrectionResult(res.data.data)
         reset()
       } else {
         toast.error(res.data?.message || 'Submission failed. Please try again.')
@@ -63,22 +64,57 @@ export default function SubmitCorrection() {
           viewport={{ once: true }}
           className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-10"
         >
-          {submitted ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-[#DFF5EF] text-[#087F8C] flex items-center justify-center mx-auto mb-4">
+          {correctionResult ? (
+            <div className="text-center py-6 space-y-5">
+              <div className="w-16 h-16 rounded-full bg-[#DFF5EF] text-[#087F8C] flex items-center justify-center mx-auto shadow-sm">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold text-[#172B3A]">Report Received</h3>
-              <p className="text-sm text-[#64748B] mt-2 max-w-md mx-auto">
-                Thank you for contributing to the pet community! Our verification team will review this report and update the listing.
-              </p>
-              <button
-                type="button"
-                onClick={() => setSubmitted(false)}
-                className="mt-6 px-6 py-2.5 rounded-lg bg-[#087F8C] text-white text-sm font-medium hover:bg-[#06666f] transition-colors"
-              >
-                Submit Another Correction
-              </button>
+              <div>
+                <h3 className="text-2xl font-bold text-[#172B3A]">Correction Report Logged!</h3>
+                <p className="text-sm text-[#64748B] mt-1 max-w-md mx-auto">
+                  Thank you for contributing to the pet community! Our verification team will review this report and apply updates.
+                </p>
+              </div>
+
+              {/* Confirmation Details Card */}
+              <div className="bg-[#F8FAFC] border border-gray-200 rounded-2xl p-5 max-w-md mx-auto text-left space-y-2.5">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-xs uppercase tracking-wider font-semibold text-[#64748B]">
+                    Correction Reference ID
+                  </span>
+                  <span className="font-mono text-xs font-bold text-[#087F8C] bg-[#DFF5EF] px-2 py-0.5 rounded">
+                    {correctionResult._id}
+                  </span>
+                </div>
+                <div className="text-xs space-y-1 pt-1">
+                  <div>
+                    <span className="text-[#64748B]">Target Facility: </span>
+                    <span className="font-semibold text-[#172B3A]">{correctionResult.providerName}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#64748B]">Issue Category: </span>
+                    <span className="font-medium text-[#172B3A] capitalize">
+                      {correctionResult.issueType?.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-gray-200 flex justify-between items-center">
+                    <span className="text-[#64748B]">Review Status:</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold uppercase text-[11px]">
+                      {correctionResult.status || 'Pending'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setCorrectionResult(null)}
+                  className="px-6 py-2.5 rounded-xl bg-[#087F8C] text-white text-sm font-medium hover:bg-[#06666f] transition-colors"
+                >
+                  Submit Another Correction
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -163,4 +199,3 @@ export default function SubmitCorrection() {
     </section>
   )
 }
-

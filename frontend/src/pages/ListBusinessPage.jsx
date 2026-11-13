@@ -17,7 +17,7 @@ const categories = [
 
 export default function ListBusinessPage() {
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const [submissionResult, setSubmissionResult] = useState(null)
 
   const {
     register,
@@ -32,7 +32,7 @@ export default function ListBusinessPage() {
       const res = await api.post('/business-listings', data)
       if (res.data?.success) {
         toast.success('Your listing application was submitted successfully! It is currently under review.')
-        setSubmitted(true)
+        setSubmissionResult(res.data.data)
         reset()
       } else {
         toast.error(res.data?.message || 'Failed to submit listing.')
@@ -83,26 +83,69 @@ export default function ListBusinessPage() {
           transition={{ duration: 0.4 }}
           className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-12"
         >
-          {submitted ? (
-            <div className="text-center py-12 space-y-4">
+          {submissionResult ? (
+            <div className="text-center py-6 space-y-6">
               <div className="w-20 h-20 rounded-full bg-[#DFF5EF] text-[#087F8C] flex items-center justify-center mx-auto shadow-sm">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
-              <h2 className="text-2xl font-bold text-[#172B3A]">Application Submitted!</h2>
-              <p className="text-base text-[#64748B] max-w-lg mx-auto">
-                Thank you for registering your practice. Your application is marked as <strong>Pending</strong>. Our verification team will verify the details and activate your public profile within 24–48 hours.
+              <div>
+                <h2 className="text-2xl font-bold text-[#172B3A]">Application Submitted!</h2>
+                <p className="text-sm text-[#64748B] mt-1 max-w-lg mx-auto">
+                  Your business registration has been recorded and submitted to our verification team.
+                </p>
+              </div>
+
+              {/* Submission Confirmation Card */}
+              <div className="bg-[#F8FAFC] border border-gray-200/80 rounded-2xl p-6 max-w-xl mx-auto text-left space-y-3">
+                <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                  <span className="text-xs uppercase tracking-wider font-semibold text-[#64748B]">
+                    Submission Reference ID
+                  </span>
+                  <span className="font-mono text-xs font-bold text-[#087F8C] bg-[#DFF5EF] px-2.5 py-1 rounded-md">
+                    {submissionResult._id}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm pt-1">
+                  <div>
+                    <span className="text-xs text-[#64748B] block">Business Name</span>
+                    <span className="font-semibold text-[#172B3A]">{submissionResult.businessName}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#64748B] block">Category</span>
+                    <span className="font-semibold text-[#087F8C]">{submissionResult.category}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#64748B] block">Owner / Doctor</span>
+                    <span className="font-medium text-[#172B3A]">{submissionResult.ownerName}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#64748B] block">City</span>
+                    <span className="font-medium text-[#172B3A]">{submissionResult.city}</span>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-gray-200 flex justify-between items-center text-xs">
+                  <span className="text-[#64748B]">Listing Status:</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold uppercase">
+                    {submissionResult.status || 'Pending'}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-[#64748B] max-w-md mx-auto">
+                Once reviewed and approved by our team, your practice will be publicly discoverable across Practo for Animals.
               </p>
-              <div className="pt-4 flex justify-center gap-4">
+
+              <div className="pt-2 flex flex-wrap justify-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setSubmitted(false)}
-                  className="px-6 py-2.5 rounded-xl border border-gray-200 text-[#172B3A] text-sm font-medium hover:bg-gray-50"
+                  onClick={() => setSubmissionResult(null)}
+                  className="px-6 py-2.5 rounded-xl border border-gray-200 text-[#172B3A] text-sm font-medium hover:bg-gray-50 transition-colors"
                 >
                   Register Another Practice
                 </button>
                 <Link
                   to="/search"
-                  className="px-6 py-2.5 rounded-xl bg-[#087F8C] text-white text-sm font-medium hover:bg-[#06666f]"
+                  className="px-6 py-2.5 rounded-xl bg-[#087F8C] text-white text-sm font-medium hover:bg-[#06666f] transition-colors"
                 >
                   Explore Directory
                 </Link>

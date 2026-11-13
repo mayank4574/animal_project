@@ -17,6 +17,7 @@ app.use(express.json());
 app.use('/api/providers', require('./routes/providerRoutes'));
 app.use('/api/business-listings', require('./routes/businessListingRoutes'));
 app.use('/api/corrections', require('./routes/correctionRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Error handler
 app.use(errorHandler);

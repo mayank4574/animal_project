@@ -46,14 +46,20 @@
 - Categorized service badges.
 - Verified status badge & operating hours schedule.
 
-### 4. Partner Business Listing (`/list-business`)
-- Dedicated registration form with **React Hook Form**.
-- Strict validation:
-  - Required fields check
-  - Standard RFC 5322 email validation
-  - 10-digit Indian mobile number validation (`/^[6-9]\d{9}$/`)
-- Direct submission to MongoDB with default `pending` status.
-- Instant toast notification feedback via **React Hot Toast**.
+### 5. Business Listing + Correction Management Workflows
+- **Business Submission to Public Directory**:
+  - Clinics register via `/list-business` with instant unique submission ID and confirmation screen.
+  - Submissions enter MongoDB with `pending` status and remain hidden from public search.
+  - Administrators review applications inside the protected Admin Dashboard (`/admin`).
+  - Upon approval, a verified `Provider` record is published and immediately discoverable in search, filters, and detail views. Duplicate records are prevented.
+- **Community Corrections to Provider Updates**:
+  - Users report outdated data or closures via the homepage correction form with unique reference IDs.
+  - Admins review reports and apply targeted field updates (`phone`, `address`, `website`, etc.) while strictly preserving existing ratings and review counts.
+  - Permanently closed facilities are marked inactive (`isActive: false`) and cleanly removed from public discovery without destroying audit records.
+- **Protected Admin Portal (`/admin`)**:
+  - Server-side JWT authentication (`/admin/login`).
+  - Live statistics: Total Submissions, Pending/Approved/Rejected Businesses, Pending/Resolved Corrections, and Published Providers.
+  - Filterable, searchable, and paginated tables with modal detail views and confirmation dialogs.
 
 ---
 
@@ -216,6 +222,26 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 | Method | Endpoint | Description | Request Body |
 |---|---|---|---|
 | `POST` | `/api/corrections` | Submit community data correction report | `{ providerName, issueType, description, userEmail }` |
+
+### Admin Management Endpoints (Protected by JWT or `x-admin-key`)
+
+| Method | Endpoint | Description | Authorization |
+|---|---|---|---|
+| `POST` | `/api/admin/login` | Authenticate administrator credentials | Public (`{ email, password }`) |
+| `GET` | `/api/admin/stats` | Aggregate dashboard counts & metrics | Bearer Token / `x-admin-key` |
+| `GET` | `/api/admin/business-listings` | Filterable, paginated partner submissions | Bearer Token / `x-admin-key` |
+| `GET` | `/api/admin/business-listings/:id` | View submission detail record | Bearer Token / `x-admin-key` |
+| `PUT` | `/api/admin/business-listings/:id/approve` | Approve business & publish to public directory | Bearer Token / `x-admin-key` |
+| `PUT` | `/api/admin/business-listings/:id/reject` | Reject application & hide from public | Bearer Token / `x-admin-key` |
+| `GET` | `/api/admin/corrections` | Filterable, paginated correction requests | Bearer Token / `x-admin-key` |
+| `GET` | `/api/admin/corrections/:id` | View correction request details | Bearer Token / `x-admin-key` |
+| `PUT` | `/api/admin/corrections/:id/approve` | Apply approved updates or mark closed provider inactive | Bearer Token / `x-admin-key` |
+| `PUT` | `/api/admin/corrections/:id/reject` | Reject correction without touching provider | Bearer Token / `x-admin-key` |
+| `PUT` | `/api/admin/corrections/:id/review` | Mark correction as reviewed | Bearer Token / `x-admin-key` |
+
+> **Default Admin Credentials**:
+> - Email: `admin@practoforanimals.com`
+> - Password: `Admin@Practo2024!`
 
 ---
 
