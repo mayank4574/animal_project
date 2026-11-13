@@ -31,7 +31,8 @@ export default function AdminLoginPage() {
         toast.error(res.data?.message || 'Login failed')
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Invalid admin credentials')
+      const msg = err.response?.data?.message || (err.response?.status === 404 ? 'API route not found. Check VITE_API_URL' : 'Invalid admin credentials');
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
