@@ -24,7 +24,9 @@ exports.getProviders = asyncHandler(async (req, res) => {
   ];
 
   if (category) {
-    andClauses.push({ category });
+    const trimmed = category.trim();
+    const base = trimmed.replace(/s$/i, '');
+    andClauses.push({ category: new RegExp(`^${base}s?$`, 'i') });
   }
 
   if (city) {
@@ -62,7 +64,13 @@ exports.getProviders = asyncHandler(async (req, res) => {
     const s = search.trim();
     const sRe = new RegExp(s, 'i');
     andClauses.push({
-      $or: [{ name: sRe }, { description: sRe }, { address: sRe }, { city: sRe }],
+      $or: [
+        { name: sRe },
+        { description: sRe },
+        { address: sRe },
+        { city: sRe },
+        { pincode: sRe },
+      ],
     });
   }
 
@@ -70,11 +78,11 @@ exports.getProviders = asyncHandler(async (req, res) => {
 
   // Relevance and safe sorting
   let sortObj = { rating: -1, reviewCount: -1 };
-  if (sort === 'name') {
+  if (sort === 'name' || sort === 'name-asc') {
     sortObj = { name: 1 };
-  } else if (sort === '-name') {
+  } else if (sort === '-name' || sort === 'name-desc') {
     sortObj = { name: -1 };
-  } else if (sort === 'rating' || sort === '-rating') {
+  } else if (sort === 'rating' || sort === '-rating' || sort === 'rating-desc') {
     sortObj = { rating: -1, reviewCount: -1 };
   } else if (sort && sort !== 'relevance') {
     sortObj = {};

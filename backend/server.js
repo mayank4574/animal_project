@@ -26,7 +26,14 @@ app.use(express.json());
 
 // Health Check
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date() });
+  const mongoose = require('mongoose');
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  res.json({
+    status: 'ok',
+    database: dbStatus,
+    uptime: process.uptime(),
+    timestamp: new Date(),
+  });
 });
 
 // Routes
