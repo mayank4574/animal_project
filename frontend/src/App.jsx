@@ -6,6 +6,7 @@ import ProviderDetailPage from './pages/ProviderDetailPage'
 import ListBusinessPage from './pages/ListBusinessPage'
 import AdminLoginPage from './pages/AdminLoginPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
+import NotFoundPage from './pages/NotFoundPage'
 import { Toaster } from 'react-hot-toast'
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/provider/:slug" element={<ProviderDetailPage />} />
           <Route path="/list-business" element={<ListBusinessPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
         {/* Dedicated Admin Portal Routes */}

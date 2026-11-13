@@ -10,8 +10,24 @@ const app = express();
 
 // Middleware
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
+const corsOrigin = process.env.CORS_ORIGIN;
+app.use(
+  cors({
+    origin:
+      corsOrigin === '*'
+        ? '*'
+        : corsOrigin && corsOrigin.includes(',')
+        ? corsOrigin.split(',').map((s) => s.trim())
+        : corsOrigin || 'http://localhost:5173',
+    credentials: true,
+  })
+);
 app.use(express.json());
+
+// Health Check
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date() });
+});
 
 // Routes
 app.use('/api/providers', require('./routes/providerRoutes'));
