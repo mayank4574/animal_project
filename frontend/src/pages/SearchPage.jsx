@@ -10,6 +10,7 @@ import {
   ChevronRight, 
   SlidersHorizontal,
   MapPin,
+  Building,
   Star
 } from 'lucide-react'
 import api from '../services/api'
@@ -36,14 +37,16 @@ const ratingOptions = [
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // State from URL or defaults
+  // State initialized from URL query params
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '')
-  const [city, setCity] = useState(searchParams.get('city') || searchParams.get('location') || '')
+  const [city, setCity] = useState(searchParams.get('city') || '')
+  const [area, setArea] = useState(searchParams.get('area') || '')
+  const [locationParam, setLocationParam] = useState(searchParams.get('location') || '')
   const [pincode, setPincode] = useState(searchParams.get('pincode') || '')
   const [minRating, setMinRating] = useState(searchParams.get('minRating') || '')
-  const [openNow, setOpenNow] = useState(searchParams.get('openNow') === 'true')
-  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'rating')
+  const [openNow, setOpenNow] = useState(searchParams.get('openNow') === 'true' || searchParams.get('isOpen') === 'true')
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'relevance')
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
 
   // Drawer for mobile
@@ -55,37 +58,38 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Fetch providers based on filters
+  // Fetch providers with all combined filters handled by the backend
   const fetchProviders = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
       const params = new URLSearchParams()
-      if (searchTerm) params.set('search', searchTerm)
+      if (searchTerm.trim()) params.set('search', searchTerm.trim())
       if (selectedCategory) params.set('category', selectedCategory)
-      if (city) params.set('city', city)
-      if (pincode) params.set('pincode', pincode)
+      if (city.trim()) params.set('city', city.trim())
+      if (area.trim()) params.set('area', area.trim())
+      if (locationParam.trim()) params.set('location', locationParam.trim())
+      if (pincode.trim()) params.set('pincode', pincode.trim())
       if (minRating) params.set('minRating', minRating)
       if (openNow) params.set('isOpen', 'true')
       
-      // Sorting mapping
-      if (sortBy === 'rating') params.set('sort', '-rating')
-      else if (sortBy === 'name') params.set('sort', 'name')
-      else if (sortBy === 'relevance') {
-        // default server sort or rating
-      }
+      // Sorting
+      if (sortBy) params.set('sort', sortBy)
 
-      params.set('page', page)
+      params.set('page', String(page))
       params.set('limit', '12')
 
       const res = await api.get(`/providers?${params.toString()}`)
       if (res.data?.success) {
-        let results = res.data.data || []
-        if (openNow) {
-          results = results.filter(p => p.isOpen === true)
-        }
-        setProviders(results)
-        setPagination(res.data.pagination || { page: 1, limit: 12, total: results.length, pages: 1 })
+        setProviders(res.data.data || [])
+        setPagination(
+          res.data.pagination || {
+            page: 1,
+            limit: 12,
+            total: res.data.data?.length || 0,
+            pages: 1,
+          }
+        )
       } else {
         throw new Error(res.data?.message || 'Failed to fetch providers')
       }
@@ -94,39 +98,43 @@ export default function SearchPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchTerm, selectedCategory, city, pincode, minRating, openNow, sortBy, page])
+  }, [searchTerm, selectedCategory, city, area, locationParam, pincode, minRating, openNow, sortBy, page])
 
   useEffect(() => {
     fetchProviders()
   }, [fetchProviders])
 
-  // Sync to URL query params
+  // Sync state to URL query params
   useEffect(() => {
     const params = new URLSearchParams()
     if (searchTerm) params.set('search', searchTerm)
     if (selectedCategory) params.set('category', selectedCategory)
     if (city) params.set('city', city)
+    if (area) params.set('area', area)
+    if (locationParam) params.set('location', locationParam)
     if (pincode) params.set('pincode', pincode)
     if (minRating) params.set('minRating', minRating)
     if (openNow) params.set('openNow', 'true')
-    if (sortBy) params.set('sort', sortBy)
-    if (page > 1) params.set('page', page)
+    if (sortBy && sortBy !== 'relevance') params.set('sort', sortBy)
+    if (page > 1) params.set('page', String(page))
     setSearchParams(params, { replace: true })
-  }, [searchTerm, selectedCategory, city, pincode, minRating, openNow, sortBy, page, setSearchParams])
+  }, [searchTerm, selectedCategory, city, area, locationParam, pincode, minRating, openNow, sortBy, page, setSearchParams])
 
   const handleClearFilters = () => {
     setSearchTerm('')
     setSelectedCategory('')
     setCity('')
+    setArea('')
+    setLocationParam('')
     setPincode('')
     setMinRating('')
     setOpenNow(false)
-    setSortBy('rating')
+    setSortBy('relevance')
     setPage(1)
   }
 
   const hasActiveFilters = Boolean(
-    searchTerm || selectedCategory || city || pincode || minRating || openNow
+    searchTerm || selectedCategory || city || area || locationParam || pincode || minRating || openNow
   )
 
   const filterSidebar = (
@@ -176,10 +184,10 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* Location / City */}
+      {/* City */}
       <div>
         <label className="block text-xs font-semibold text-[#64748B] uppercase tracking-wider mb-2">
-          City / Location
+          City
         </label>
         <div className="relative">
           <MapPin className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
@@ -187,7 +195,24 @@ export default function SearchPage() {
             type="text"
             placeholder="e.g. Mumbai, Bangalore, Delhi"
             value={city}
-            onChange={(e) => { setCity(e.target.value); setPage(1); }}
+            onChange={(e) => { setCity(e.target.value); setLocationParam(''); setPage(1); }}
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#087F8C]/30 focus:border-[#087F8C]"
+          />
+        </div>
+      </div>
+
+      {/* Area / Locality */}
+      <div>
+        <label className="block text-xs font-semibold text-[#64748B] uppercase tracking-wider mb-2">
+          Area / Locality
+        </label>
+        <div className="relative">
+          <Building className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+          <input
+            type="text"
+            placeholder="e.g. Andheri, Dwarka, Koramangala"
+            value={area}
+            onChange={(e) => { setArea(e.target.value); setLocationParam(''); setPage(1); }}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#087F8C]/30 focus:border-[#087F8C]"
           />
         </div>
@@ -200,7 +225,7 @@ export default function SearchPage() {
         </label>
         <input
           type="text"
-          placeholder="e.g. 400053"
+          placeholder="e.g. 400053, 560066"
           value={pincode}
           onChange={(e) => { setPincode(e.target.value); setPage(1); }}
           className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#087F8C]/30 focus:border-[#087F8C]"
@@ -257,7 +282,7 @@ export default function SearchPage() {
               <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
               <input
                 type="text"
-                placeholder="Search by clinic name, doctor, or treatment..."
+                placeholder="Search by clinic name, doctor, area, or treatment..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#087F8C]/30 focus:border-[#087F8C]"
@@ -275,7 +300,7 @@ export default function SearchPage() {
             {/* Mobile Filter Button */}
             <button
               onClick={() => setDrawerOpen(true)}
-              className="lg:hidden w-full sm:w-auto px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-[#172B3A] flex items-center justify-center gap-2 hover:bg-gray-50"
+              className="lg:hidden w-full sm:w-auto px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-[#172B3A] flex items-center justify-center gap-2 hover:bg-gray-50 shrink-0"
             >
               <Filter className="w-4 h-4 text-[#087F8C]" />
               Filters {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-[#FF9B62]" />}
@@ -286,7 +311,7 @@ export default function SearchPage() {
               <span className="text-xs text-[#64748B] hidden sm:inline">Sort:</span>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
                 className="w-full sm:w-auto px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#087F8C]/30 focus:border-[#087F8C]"
               >
                 <option value="relevance">Relevance</option>
@@ -310,11 +335,11 @@ export default function SearchPage() {
           {/* Right Provider Listing Area */}
           <section className="lg:col-span-3 space-y-6">
             
-            {/* Active filters pill list */}
+            {/* Active filters count & info */}
             <div className="flex items-center justify-between text-sm text-[#64748B]">
               <p>
                 Showing <span className="font-semibold text-[#172B3A]">{providers.length}</span> of{' '}
-                <span className="font-semibold text-[#172B3A]">{pagination.total || providers.length}</span> animal care providers
+                <span className="font-semibold text-[#172B3A]">{pagination.total}</span> animal care providers
               </p>
               {hasActiveFilters && (
                 <button

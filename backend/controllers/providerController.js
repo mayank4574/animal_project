@@ -4,28 +4,90 @@ const asyncHandler = require('../middleware/asyncHandler');
 
 // GET /api/providers
 exports.getProviders = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 12, category, city, pincode, minRating, search, sort } = req.query;
+  const {
+    page = 1,
+    limit = 12,
+    category,
+    city,
+    area,
+    location,
+    pincode,
+    minRating,
+    search,
+    isOpen,
+    openNow,
+    sort = 'relevance',
+  } = req.query;
 
-  const filter = {};
-  if (category) filter.category = category;
-  if (city) filter.city = new RegExp(city, 'i');
-  if (pincode) filter.pincode = pincode;
-  if (minRating) filter.rating = { $gte: Number(minRating) };
-  if (search) {
-    const re = new RegExp(search, 'i');
-    filter.$or = [{ name: re }, { description: re }, { address: re }];
+  const andClauses = [];
+
+  if (category) {
+    andClauses.push({ category });
   }
 
-  let sortObj = { rating: -1 };
-  if (sort) {
+  if (city) {
+    andClauses.push({ city: new RegExp(city.trim(), 'i') });
+  }
+
+  if (area) {
+    andClauses.push({ address: new RegExp(area.trim(), 'i') });
+  }
+
+  if (pincode) {
+    andClauses.push({ pincode: pincode.trim() });
+  }
+
+  if (location) {
+    const loc = location.trim();
+    const locRe = new RegExp(loc, 'i');
+    andClauses.push({
+      $or: [{ city: locRe }, { address: locRe }, { pincode: loc }],
+    });
+  }
+
+  if (minRating) {
+    const ratingNum = Number(minRating);
+    if (!isNaN(ratingNum)) {
+      andClauses.push({ rating: { $gte: ratingNum } });
+    }
+  }
+
+  if (isOpen === 'true' || openNow === 'true') {
+    andClauses.push({ isOpen: true });
+  }
+
+  if (search) {
+    const s = search.trim();
+    const sRe = new RegExp(s, 'i');
+    andClauses.push({
+      $or: [{ name: sRe }, { description: sRe }, { address: sRe }, { city: sRe }],
+    });
+  }
+
+  const filter = andClauses.length > 0 ? { $and: andClauses } : {};
+
+  // Relevance and safe sorting
+  let sortObj = { rating: -1, reviewCount: -1 };
+  if (sort === 'name') {
+    sortObj = { name: 1 };
+  } else if (sort === '-name') {
+    sortObj = { name: -1 };
+  } else if (sort === 'rating' || sort === '-rating') {
+    sortObj = { rating: -1, reviewCount: -1 };
+  } else if (sort && sort !== 'relevance') {
     sortObj = {};
     sort.split(',').forEach((field) => {
-      if (field.startsWith('-')) {
-        sortObj[field.slice(1)] = -1;
+      const trimmed = field.trim();
+      if (trimmed.startsWith('-')) {
+        sortObj[trimmed.slice(1)] = -1;
       } else {
-        sortObj[field] = 1;
+        sortObj[trimmed] = 1;
       }
     });
+    // Fallback if empty
+    if (Object.keys(sortObj).length === 0) {
+      sortObj = { rating: -1, reviewCount: -1 };
+    }
   }
 
   const pageNum = Math.max(1, Number(page));
@@ -39,7 +101,12 @@ exports.getProviders = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data,
-    pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) },
+    pagination: {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      pages: Math.max(1, Math.ceil(total / limitNum)),
+    },
   });
 });
 

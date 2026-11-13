@@ -161,7 +161,7 @@ export default function ProviderDetailPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
                 {phone && (
                   <a
                     href={`tel:${phone}`}

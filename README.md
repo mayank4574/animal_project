@@ -257,3 +257,4 @@ npm run build
 ## ⚖️ License & Attribution
 
 Designed and developed as a production-quality MVP for the **Practo for Animals** product discovery internship assignment. Demo provider records are fictional and clearly labeled as sample data.
+
